@@ -181,7 +181,7 @@ typedef enum {
 	return returnArray;
 }
 
-- (void)animateViewDown:(UIView *)aView withNextView:(UIView *)nextView;
+- (void)animateViewDown:(UIView *)aView withNextView:(UIView *)nextView withDuration:(CGFloat)duration;
 {
 	// Get snapshots for the first view:
 	NSArray *frontViews = [self snapshotsForView:aView];
@@ -231,7 +231,7 @@ typedef enum {
 	// Add an animation to swing from top to bottom.
 	CABasicAnimation *topAnim = [CABasicAnimation animationWithKeyPath:@"transform"];
 	topAnim.beginTime = CACurrentMediaTime();
-	topAnim.duration = 1.0f;
+	topAnim.duration = duration;
 	topAnim.fromValue = [NSValue valueWithCATransform3D:skewedIdentityTransform];
 	topAnim.toValue = [NSValue valueWithCATransform3D:CATransform3DRotate(skewedIdentityTransform, -M_PI_2, 1.f, 0.f, 0.f)];
 	topAnim.delegate = self;
@@ -286,27 +286,21 @@ typedef enum {
 		{{
 			UIView *aView = [clockTiles objectAtIndex:viewIndex];
 			UIView *nextView = [clockTiles objectAtIndex:nextViewIndex];
-			[self animateViewDown:aView withNextView:nextView];
+			[self animateViewDown:aView withNextView:nextView withDuration:0.45f];
 
-			// Snapshot the view, animate it down.
 			NSLog(@"moving to state kFlipAnimationTopDown");
 			animationState = kFlipAnimationTopDown;
-			// anything else to do here? lots, really.
 		}}
 			break;
 		case kFlipAnimationTopDown:
 			// Swap some tiles around:
+			[bottomHalfBackView.superview bringSubviewToFront:bottomHalfBackView];
+
 			NSLog(@"moving to state kFlipAnimationBottomDown");
 			animationState = kFlipAnimationBottomDown;
-			[bottomHalfBackView.superview bringSubviewToFront:bottomHalfBackView];
-			// anything else?
 			break;
 		case kFlipAnimationBottomDown:
 		{{
-			// Clean up and prep:
-			NSLog(@"moving to state kFlipAnimationNormal");
-			animationState = kFlipAnimationNormal;
-
 			UIView *newView = [clockTiles objectAtIndex:nextViewIndex];
 			[self addSubviewWithTapRecognizer:newView];
 
@@ -319,6 +313,9 @@ typedef enum {
 
 			// And reset other state:
 			nextViewIndex = viewIndex = NSNotFound;
+
+			NSLog(@"moving to state kFlipAnimationNormal");
+			animationState = kFlipAnimationNormal;
 		}}
 			break;
 	}
