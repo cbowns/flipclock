@@ -340,7 +340,7 @@ typedef enum {
 	NSLog(@"%s %@", __func__, sender);
 	UISlider *aSlider = (UISlider *)sender;
 	duration = aSlider.value;
-	speedLabel.text = [NSString stringWithFormat:@"%.1f s", duration];
+	speedLabel.text = [NSString stringWithFormat:@"%.2f s", duration];
 }
 
 - (IBAction)zIndexValueDidChange:(id)sender;
