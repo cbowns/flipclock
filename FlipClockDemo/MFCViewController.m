@@ -21,11 +21,74 @@ typedef enum {
 	UIView *bottomHalfFrontView;
 	UIView *topHalfBackView;
 	UIView *bottomHalfBackView;
+	NSArray *clockTiles;
 }
 
 @end
 
 @implementation MFCViewController
+
+- (id)init;
+{
+	self = [super initWithNibName:NSStringFromClass([self class]) bundle:nil];
+	if (self) {
+		// Custom initialization goes here
+
+		NSMutableArray *newTiles = [NSMutableArray array];
+		for (int i = 1; i < 10; i++) {
+			UIView *aNewView = [self viewWithText:[NSString stringWithFormat:@"%i", i]];
+			[newTiles addObject:aNewView];
+		}
+
+		clockTiles = [NSArray arrayWithArray:newTiles];
+	}
+	return self;
+}
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+	return [self init];
+}
+
+- (void)dealloc
+{
+	clockTiles = nil;
+}
+
+// Get a large clock-like view with the given text.
+- (UIView *)viewWithText:(NSString *)text;
+{
+	UIView *aNewView = nil;
+
+	// Make a label
+	UILabel *digitLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+	digitLabel.font = [UIFont systemFontOfSize:160.f];
+	digitLabel.text = text;
+	digitLabel.textAlignment = UITextAlignmentCenter;
+	digitLabel.textColor = [UIColor whiteColor];
+	digitLabel.backgroundColor = [UIColor clearColor];
+	[digitLabel sizeToFit];
+
+	// Add the label to a wrapper view for corners.
+	aNewView = [[UIView alloc] initWithFrame:CGRectZero];
+	aNewView.frame = CGRectMake(0.f, 0.f, 100.f, 200.f);
+	aNewView.layer.cornerRadius = 10.f;
+	aNewView.layer.masksToBounds = YES;
+	aNewView.backgroundColor = [UIColor blackColor];
+
+	digitLabel.center = CGPointMake(aNewView.bounds.size.width / 2, aNewView.bounds.size.height / 2);
+	[aNewView addSubview:digitLabel];
+
+	// Put a dividing line over the label:
+	UIView *lineView = [[UIView alloc] init];
+	lineView.backgroundColor = [UIColor blackColor];
+	lineView.frame = CGRectMake(0.f, 0.f, aNewView.frame.size.width, 10.f);
+	lineView.center = digitLabel.center;
+
+	[aNewView addSubview:lineView];
+
+	return aNewView;
+}
 
 #pragma mark - View lifecycle
 
@@ -34,83 +97,15 @@ typedef enum {
 	[super viewDidLoad];
 	// Do any additional setup after loading the view, typically from a nib.
 
-	UIView *aNumberView = nil;
-	{{
-		// Make a label
-		UILabel *digitLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-		digitLabel.font = [UIFont systemFontOfSize:160.f];
-		digitLabel.text = @"1";
-		digitLabel.textAlignment = UITextAlignmentCenter;
-		digitLabel.textColor = [UIColor whiteColor];
-		digitLabel.backgroundColor = [UIColor clearColor];
-		[digitLabel sizeToFit];
+	UIView *aNumberView = [clockTiles objectAtIndex:0];
 
-		// Add the label to a wrapper view for corners.
-		aNumberView = [[UIView alloc] initWithFrame:CGRectZero];
-		aNumberView.frame = CGRectMake(0.f, 0.f, 100.f, 200.f);
-		aNumberView.layer.cornerRadius = 10.f;
-		aNumberView.layer.masksToBounds = YES;
-		aNumberView.backgroundColor = [UIColor blackColor];
-
-		digitLabel.center = CGPointMake(aNumberView.bounds.size.width / 2, aNumberView.bounds.size.height / 2);
-		[aNumberView addSubview:digitLabel];
-
-		// Put a dividing line over the label:
-		UIView *lineView = [[UIView alloc] init];
-		lineView.backgroundColor = [UIColor blackColor];
-		lineView.frame = CGRectMake(0.f, 0.f, aNumberView.frame.size.width, 10.f);
-		lineView.center = digitLabel.center;
-
-		[aNumberView addSubview:lineView];
-	}}
-
-	UIView *secondNumberView = nil;
-	{{
-		// Make a label
-		UILabel *digitLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-		digitLabel.font = [UIFont systemFontOfSize:160.f];
-		digitLabel.text = @"2";
-		digitLabel.textAlignment = UITextAlignmentCenter;
-		digitLabel.textColor = [UIColor whiteColor];
-		digitLabel.backgroundColor = [UIColor clearColor];
-		[digitLabel sizeToFit];
-
-		// Add the label to a wrapper view for corners.
-		secondNumberView = [[UIView alloc] initWithFrame:CGRectZero];
-		secondNumberView.frame = CGRectMake(0.f, 0.f, 100.f, 200.f);
-		secondNumberView.layer.cornerRadius = 10.f;
-		secondNumberView.layer.masksToBounds = YES;
-		secondNumberView.backgroundColor = [UIColor blackColor];
-		
-		digitLabel.center = CGPointMake(secondNumberView.bounds.size.width / 2, secondNumberView.bounds.size.height / 2);
-		[secondNumberView addSubview:digitLabel];
-		
-		// Put a dividing line over the label:
-		UIView *lineView = [[UIView alloc] init];
-		lineView.backgroundColor = [UIColor blackColor];
-		lineView.frame = CGRectMake(0.f, 0.f, secondNumberView.frame.size.width, 10.f);
-		lineView.center = digitLabel.center;
-		
-		[secondNumberView addSubview:lineView];
-	}}
-
-	// Wrapper view for the view that holds the label, since the label's wrapper does the corners.
-	// It'll be easier later to control masksToBounds on another layer.
-	UIView *wrapperView = [[UIView alloc] initWithFrame:aNumberView.frame];
-	[wrapperView addSubview:aNumberView];
-
-	UIView *secondWrapperView = [[UIView alloc] initWithFrame:secondNumberView.frame];
-	[secondWrapperView addSubview:secondNumberView];
-
-	// Add the top-level view
-	wrapperView.center = CGPointMake(self.view.bounds.size.width / 2, self.view.bounds.size.height / 2);
-	[self.view addSubview:wrapperView];
-	secondWrapperView.center = wrapperView.center;
-	[self.view insertSubview:secondWrapperView belowSubview:wrapperView];
+	// Add the views to our view:
+	aNumberView.center = CGPointMake(self.view.bounds.size.width / 2, self.view.bounds.size.height / 2);
+	[self.view addSubview:aNumberView];
 
 	// Add a tap gesture recognizer:
 	UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(viewWasTapped:)];
-	[wrapperView addGestureRecognizer:tapGestureRecognizer];
+	[aNumberView addGestureRecognizer:tapGestureRecognizer];
 }
 
 - (void)viewDidUnload
@@ -126,9 +121,8 @@ typedef enum {
 	NSLog(@"%s %@", __func__, tapGestureRecognizer);
 	animationState = kFlipAnimationNormal;
 	[self changeAnimationState];
-	NSArray *subviews = [[tapGestureRecognizer.view superview] subviews];
-	NSUInteger subviewOffset = [subviews indexOfObject:tapGestureRecognizer.view];
-	UIView *nextView = [subviews objectAtIndex:subviewOffset - 1];
+	NSUInteger subviewOffset = [clockTiles indexOfObject:tapGestureRecognizer.view];
+	UIView *nextView = [clockTiles objectAtIndex:subviewOffset + 1];
 	[self animateViewDown:tapGestureRecognizer.view withNextView:nextView];
 }
 
@@ -198,7 +192,7 @@ typedef enum {
 
 	bottomHalfBackView.frame = bottomHalfFrontView.frame;
 	[self.view insertSubview:bottomHalfBackView belowSubview:bottomHalfFrontView];
-	
+
 	////////////////
 	// Animations //
 	////////////////
