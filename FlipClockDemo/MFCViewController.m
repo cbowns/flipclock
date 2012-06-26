@@ -24,6 +24,12 @@ typedef enum {
 	NSUInteger viewIndex;
 	NSUInteger nextViewIndex;
 	NSArray *clockTiles;
+	IBOutlet UILabel *speedLabel;
+	IBOutlet UISlider *speedSlider;
+	IBOutlet UILabel *zLabel;
+	IBOutlet UISlider *zSlider;
+	CGFloat duration;
+	CGFloat zDepth;
 }
 
 @end
@@ -112,6 +118,10 @@ typedef enum {
 
 	UIView *aNumberView = [clockTiles objectAtIndex:8];
 	[self addSubviewWithTapRecognizer:aNumberView];
+
+	// Update our slider labels:
+	[self speedSliderValueDidChange:speedSlider];
+	[self zIndexValueDidChange:zSlider];
 }
 
 - (void)viewDidUnload
@@ -181,7 +191,7 @@ typedef enum {
 	return returnArray;
 }
 
-- (void)animateViewDown:(UIView *)aView withNextView:(UIView *)nextView withDuration:(CGFloat)duration;
+- (void)animateViewDown:(UIView *)aView withNextView:(UIView *)nextView withDuration:(CGFloat)aDuration;
 {
 	// Get snapshots for the first view:
 	NSArray *frontViews = [self snapshotsForView:aView];
@@ -216,7 +226,7 @@ typedef enum {
 
 	// Skewed identity for camera perspective:
 	CATransform3D skewedIdentityTransform = CATransform3DIdentity;
-	float zDistance = 1000;
+	float zDistance = zDepth;
 	skewedIdentityTransform.m34 = 1.0 / -zDistance;
 	// We use this instead of setting a sublayer transform on our view's layer,
 	// because that gives an undesirable skew on views not centered horizontally.
@@ -231,7 +241,7 @@ typedef enum {
 	// Add an animation to swing from top to bottom.
 	CABasicAnimation *topAnim = [CABasicAnimation animationWithKeyPath:@"transform"];
 	topAnim.beginTime = CACurrentMediaTime();
-	topAnim.duration = duration;
+	topAnim.duration = aDuration;
 	topAnim.fromValue = [NSValue valueWithCATransform3D:skewedIdentityTransform];
 	topAnim.toValue = [NSValue valueWithCATransform3D:CATransform3DRotate(skewedIdentityTransform, -M_PI_2, 1.f, 0.f, 0.f)];
 	topAnim.delegate = self;
@@ -288,7 +298,7 @@ typedef enum {
 		{{
 			UIView *aView = [clockTiles objectAtIndex:viewIndex];
 			UIView *nextView = [clockTiles objectAtIndex:nextViewIndex];
-			[self animateViewDown:aView withNextView:nextView withDuration:0.45f];
+			[self animateViewDown:aView withNextView:nextView withDuration:duration];
 
 			NSLog(@"moving to state kFlipAnimationTopDown");
 			animationState = kFlipAnimationTopDown;
@@ -321,6 +331,24 @@ typedef enum {
 		}}
 			break;
 	}
+}
+
+#pragma mark - UISlider Event Handling
+
+- (IBAction)speedSliderValueDidChange:(id)sender;
+{
+	NSLog(@"%s %@", __func__, sender);
+	UISlider *aSlider = (UISlider *)sender;
+	duration = aSlider.value;
+	speedLabel.text = [NSString stringWithFormat:@"%.1f s", duration];
+}
+
+- (IBAction)zIndexValueDidChange:(id)sender;
+{
+	NSLog(@"%s %@", __func__, sender);
+	UISlider *aSlider = (UISlider *)sender;
+	zDepth = aSlider.value;
+	zLabel.text = [NSString stringWithFormat:@"%.0f", zDepth];
 }
 
 @end
