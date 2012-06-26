@@ -9,7 +9,19 @@
 #import "MFCViewController.h"
 #import <QuartzCore/QuartzCore.h>
 
-@interface MFCViewController ()
+typedef enum {
+	kFlipAnimationNormal = 0,
+	kFlipAnimationTopDown,
+	kFlipAnimationBottomDown
+} kFlipAnimationState;
+
+@interface MFCViewController () {
+	kFlipAnimationState animationState;
+	UIView *topHalfFrontView;
+	UIView *bottomHalfFrontView;
+	UIView *topHalfBackView;
+	UIView *bottomHalfBackView;
+}
 
 @end
 
@@ -52,14 +64,49 @@
 		[aNumberView addSubview:lineView];
 	}}
 
+	UIView *secondNumberView = nil;
+	{{
+		// Make a label
+		UILabel *digitLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+		digitLabel.font = [UIFont systemFontOfSize:160.f];
+		digitLabel.text = @"2";
+		digitLabel.textAlignment = UITextAlignmentCenter;
+		digitLabel.textColor = [UIColor whiteColor];
+		digitLabel.backgroundColor = [UIColor clearColor];
+		[digitLabel sizeToFit];
+
+		// Add the label to a wrapper view for corners.
+		secondNumberView = [[UIView alloc] initWithFrame:CGRectZero];
+		secondNumberView.frame = CGRectMake(0.f, 0.f, 100.f, 200.f);
+		secondNumberView.layer.cornerRadius = 10.f;
+		secondNumberView.layer.masksToBounds = YES;
+		secondNumberView.backgroundColor = [UIColor blackColor];
+		
+		digitLabel.center = CGPointMake(secondNumberView.bounds.size.width / 2, secondNumberView.bounds.size.height / 2);
+		[secondNumberView addSubview:digitLabel];
+		
+		// Put a dividing line over the label:
+		UIView *lineView = [[UIView alloc] init];
+		lineView.backgroundColor = [UIColor blackColor];
+		lineView.frame = CGRectMake(0.f, 0.f, secondNumberView.frame.size.width, 10.f);
+		lineView.center = digitLabel.center;
+		
+		[secondNumberView addSubview:lineView];
+	}}
+
 	// Wrapper view for the view that holds the label, since the label's wrapper does the corners.
 	// It'll be easier later to control masksToBounds on another layer.
 	UIView *wrapperView = [[UIView alloc] initWithFrame:aNumberView.frame];
 	[wrapperView addSubview:aNumberView];
 
+	UIView *secondWrapperView = [[UIView alloc] initWithFrame:secondNumberView.frame];
+	[secondWrapperView addSubview:secondNumberView];
+
 	// Add the top-level view
 	wrapperView.center = CGPointMake(self.view.bounds.size.width / 2, self.view.bounds.size.height / 2);
 	[self.view addSubview:wrapperView];
+	secondWrapperView.center = wrapperView.center;
+	[self.view insertSubview:secondWrapperView belowSubview:wrapperView];
 
 	// Add a tap gesture recognizer:
 	UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(viewWasTapped:)];
@@ -77,12 +124,17 @@
 - (void)viewWasTapped:(UITapGestureRecognizer *)tapGestureRecognizer;
 {
 	NSLog(@"%s %@", __func__, tapGestureRecognizer);
+	animationState = kFlipAnimationNormal;
+	[self changeAnimationState];
+	NSArray *subviews = [[tapGestureRecognizer.view superview] subviews];
+	NSUInteger subviewOffset = [subviews indexOfObject:tapGestureRecognizer.view];
+	UIView *nextView = [subviews objectAtIndex:subviewOffset - 1];
+	[self animateViewDown:tapGestureRecognizer.view withNextView:nextView];
+}
 
-	///////////////////////
-	// View snapshotting //
-	///////////////////////
-
-	UIView *aView = tapGestureRecognizer.view;
+- (NSArray *)snapshotsForView:(UIView *)aView;
+{
+	NSArray *returnArray = nil;
 
 	// Render the tapped view into an image:
 	UIGraphicsBeginImageContextWithOptions(aView.bounds.size, aView.layer.opaque, 0.f);
@@ -117,16 +169,36 @@
 	UIGraphicsEndImageContext();
 
 	UIImageView *topHalfView = [[UIImageView alloc] initWithImage:top];
-	topHalfView.frame = CGRectOffset(topHalfView.frame, 20.f, 0.f); // move in 20 px
-	[self.view addSubview:topHalfView];
-
 	UIImageView *bottomHalfView = [[UIImageView alloc] initWithImage:bottom];
-	bottomHalfView.frame = topHalfView.frame;
-	bottomHalfView.frame = CGRectOffset(bottomHalfView.frame, 20.f, topHalfView.frame.size.height * 3); // temp move in 20 px
-	[self.view addSubview:bottomHalfView];
 
+	returnArray = [NSArray arrayWithObjects:topHalfView, bottomHalfView, nil];
+	return returnArray;
+}
 
+- (void)animateViewDown:(UIView *)aView withNextView:(UIView *)nextView;
+{
+	// Get snapshots for the first view:
+	NSArray *frontViews = [self snapshotsForView:aView];
+	topHalfFrontView = [frontViews objectAtIndex:0];
+	bottomHalfFrontView = [frontViews objectAtIndex:1];
 
+	topHalfFrontView.frame = CGRectOffset(topHalfFrontView.frame, 20.f, 0.f);
+	[self.view addSubview:topHalfFrontView];
+
+	bottomHalfFrontView.frame = topHalfFrontView.frame;
+	bottomHalfFrontView.frame = CGRectOffset(bottomHalfFrontView.frame, 0.f, topHalfFrontView.frame.size.height);
+	[self.view addSubview:bottomHalfFrontView];
+
+	// Get snapshots for the second view:
+	NSArray *backViews = [self snapshotsForView:nextView];
+	topHalfBackView = [backViews objectAtIndex:0];
+	bottomHalfBackView = [backViews objectAtIndex:1];
+	topHalfBackView.frame = topHalfFrontView.frame;
+	[self.view insertSubview:topHalfBackView belowSubview:topHalfFrontView];
+
+	bottomHalfBackView.frame = bottomHalfFrontView.frame;
+	[self.view insertSubview:bottomHalfBackView belowSubview:bottomHalfFrontView];
+	
 	////////////////
 	// Animations //
 	////////////////
@@ -141,42 +213,38 @@
 	// Top tile:
 	// Set the anchor point to the bottom edge:
 	CGPoint newTopViewAnchorPoint = CGPointMake(0.5, 1.0);
-	CGPoint newTopViewCenter = [self center:topHalfView.center movedFromAnchorPoint:topHalfView.layer.anchorPoint toAnchorPoint:newTopViewAnchorPoint withFrame:topHalfView.frame];
-	topHalfView.layer.anchorPoint = newTopViewAnchorPoint;
-	topHalfView.center = newTopViewCenter;
+	CGPoint newTopViewCenter = [self center:topHalfFrontView.center movedFromAnchorPoint:topHalfFrontView.layer.anchorPoint toAnchorPoint:newTopViewAnchorPoint withFrame:topHalfFrontView.frame];
+	topHalfFrontView.layer.anchorPoint = newTopViewAnchorPoint;
+	topHalfFrontView.center = newTopViewCenter;
 
 	// Add an animation to swing from top to bottom.
 	CABasicAnimation *topAnim = [CABasicAnimation animationWithKeyPath:@"transform"];
 	topAnim.beginTime = CACurrentMediaTime();
-	topAnim.duration = 2.5f;
+	topAnim.duration = 1.0f;
 	topAnim.fromValue = [NSValue valueWithCATransform3D:skewedIdentityTransform];
-	topAnim.toValue = [NSValue valueWithCATransform3D:CATransform3DRotate(skewedIdentityTransform, -M_PI, 1.f, 0.f, 0.f)];
+	topAnim.toValue = [NSValue valueWithCATransform3D:CATransform3DRotate(skewedIdentityTransform, -M_PI_2, 1.f, 0.f, 0.f)];
 	topAnim.delegate = self;
 	topAnim.removedOnCompletion = NO;
 	topAnim.fillMode = kCAFillModeForwards;
-	[topHalfView.layer addAnimation:topAnim forKey:@"topDownFlip"];
+	[topHalfFrontView.layer addAnimation:topAnim forKey:@"topDownFlip"];
 
 	// Bottom tile:
 	// Change its anchor point:
 	CGPoint newAnchorPointBottomHalf = CGPointMake(0.5f, 0.f);
-	CGPoint newBottomHalfCenter = [self center:bottomHalfView.center movedFromAnchorPoint:bottomHalfView.layer.anchorPoint toAnchorPoint:newAnchorPointBottomHalf withFrame:bottomHalfView.frame];
-	bottomHalfView.layer.anchorPoint = newAnchorPointBottomHalf;
-	bottomHalfView.center = newBottomHalfCenter;
+	CGPoint newBottomHalfCenter = [self center:bottomHalfBackView.center movedFromAnchorPoint:bottomHalfBackView.layer.anchorPoint toAnchorPoint:newAnchorPointBottomHalf withFrame:bottomHalfBackView.frame];
+	bottomHalfBackView.layer.anchorPoint = newAnchorPointBottomHalf;
+	bottomHalfBackView.center = newBottomHalfCenter;
 
 	// Add an animation to swing from top to bottom.
 	CABasicAnimation *bottomAnim = [CABasicAnimation animationWithKeyPath:@"transform"];
 	bottomAnim.beginTime = topAnim.beginTime + topAnim.duration;
 	bottomAnim.duration = topAnim.duration;
-	bottomAnim.fromValue = [NSValue valueWithCATransform3D:CATransform3DRotate(skewedIdentityTransform, M_PI, 1.f, 0.f, 0.f)];
+	bottomAnim.fromValue = [NSValue valueWithCATransform3D:CATransform3DRotate(skewedIdentityTransform, M_PI_2, 1.f, 0.f, 0.f)];
 	bottomAnim.toValue = [NSValue valueWithCATransform3D:skewedIdentityTransform];
 	bottomAnim.delegate = self;
 	bottomAnim.removedOnCompletion = NO;
 	bottomAnim.fillMode = kCAFillModeBoth;
-	[bottomHalfView.layer addAnimation:bottomAnim forKey:@"topDownFlip"];
-
-//	anim2.beginTime = anim1.beginTime + anim1.duration;
-//	anim3.beginTime = anim2.beginTime + anim2.duration;
-
+	[bottomHalfBackView.layer addAnimation:bottomAnim forKey:@"topDownFlip"];
 }
 
 // Scales center points by the difference in their anchor points scaled to their frame size.
@@ -190,6 +258,37 @@
 									oldCenter.y + (anchorPointDiff.y * frame.size.height));
 	NSLog(@"%s new center is (%.2f, %.2f) (frame size: (%.2f, %.2f))", __func__, newCenter.x, newCenter.y, frame.size.width, frame.size.height);
 	return newCenter;
+}
+
+#pragma mark - CAAnimation delegate callbacks
+
+- (void)animationDidStop:(CAAnimation *)anim finished:(BOOL)flag;
+{
+	NSLog(@"%s", __func__);
+	[self changeAnimationState];
+}
+
+- (void)changeAnimationState;
+{
+	switch (animationState) {
+		case kFlipAnimationNormal:
+			// Snapshot the view, animate it down.
+			NSLog(@"moving to state kFlipAnimationTopDown");
+			animationState = kFlipAnimationTopDown;
+			break;
+		case kFlipAnimationTopDown:
+			// Swap animations.
+			NSLog(@"moving to state kFlipAnimationBottomDown");
+			animationState = kFlipAnimationBottomDown;
+			[bottomHalfFrontView removeFromSuperview];
+			[bottomHalfBackView.superview addSubview:bottomHalfFrontView];
+			break;
+		case kFlipAnimationBottomDown:
+			// Clean up.
+			NSLog(@"moving to state kFlipAnimationNormal");
+			animationState = kFlipAnimationNormal;
+			break;
+	}
 }
 
 @end
