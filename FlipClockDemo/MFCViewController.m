@@ -21,6 +21,7 @@ typedef enum {
 	UIView *bottomHalfFrontView;
 	UIView *topHalfBackView;
 	UIView *bottomHalfBackView;
+	NSUInteger viewIndex;
 	NSUInteger nextViewIndex;
 	NSArray *clockTiles;
 }
@@ -91,6 +92,17 @@ typedef enum {
 	return aNewView;
 }
 
+- (void)addSubviewWithTapRecognizer:(UIView *)aNewView;
+{
+	// Add the views to our view:
+	aNewView.center = CGPointMake(self.view.bounds.size.width / 2, self.view.bounds.size.height / 2);
+	[self.view addSubview:aNewView];
+
+	// Add a tap gesture recognizer:
+	UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(viewWasTapped:)];
+	[aNewView addGestureRecognizer:tapGestureRecognizer];
+}
+
 #pragma mark - View lifecycle
 
 - (void)viewDidLoad
@@ -98,15 +110,8 @@ typedef enum {
 	[super viewDidLoad];
 	// Do any additional setup after loading the view, typically from a nib.
 
-	UIView *aNumberView = [clockTiles objectAtIndex:0];
-
-	// Add the views to our view:
-	aNumberView.center = CGPointMake(self.view.bounds.size.width / 2, self.view.bounds.size.height / 2);
-	[self.view addSubview:aNumberView];
-
-	// Add a tap gesture recognizer:
-	UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(viewWasTapped:)];
-	[aNumberView addGestureRecognizer:tapGestureRecognizer];
+	UIView *aNumberView = [clockTiles objectAtIndex:8];
+	[self addSubviewWithTapRecognizer:aNumberView];
 }
 
 - (void)viewDidUnload
@@ -121,16 +126,16 @@ typedef enum {
 {
 	NSLog(@"%s %@", __func__, tapGestureRecognizer);
 	animationState = kFlipAnimationNormal;
-	[self changeAnimationState];
-	nextViewIndex = [clockTiles indexOfObject:tapGestureRecognizer.view];
+	viewIndex = [clockTiles indexOfObject:tapGestureRecognizer.view];
 	NSUInteger tileCount = [clockTiles count];
-	if (nextViewIndex == (tileCount - 1)) {
+	nextViewIndex = NSNotFound;
+	if (viewIndex == (tileCount - 1)) {
 		nextViewIndex = 0;
 	} else {
-		nextViewIndex++;
+		nextViewIndex = viewIndex + 1;
 	}
-	UIView *nextView = [clockTiles objectAtIndex:nextViewIndex];
-	[self animateViewDown:tapGestureRecognizer.view withNextView:nextView];
+
+	[self changeAnimationState];
 }
 
 - (NSArray *)snapshotsForView:(UIView *)aView;
@@ -278,26 +283,43 @@ typedef enum {
 {
 	switch (animationState) {
 		case kFlipAnimationNormal:
+		{{
+			UIView *aView = [clockTiles objectAtIndex:viewIndex];
+			UIView *nextView = [clockTiles objectAtIndex:nextViewIndex];
+			[self animateViewDown:aView withNextView:nextView];
+
 			// Snapshot the view, animate it down.
 			NSLog(@"moving to state kFlipAnimationTopDown");
 			animationState = kFlipAnimationTopDown;
-			// anything to do here? lots, really.
+			// anything else to do here? lots, really.
+		}}
 			break;
 		case kFlipAnimationTopDown:
-			// Swap animations.
+			// Swap some tiles around:
 			NSLog(@"moving to state kFlipAnimationBottomDown");
 			animationState = kFlipAnimationBottomDown;
-			[bottomHalfFrontView removeFromSuperview];
-			[bottomHalfBackView.superview addSubview:bottomHalfFrontView];
+			[bottomHalfBackView.superview bringSubviewToFront:bottomHalfBackView];
 			// anything else?
 			break;
 		case kFlipAnimationBottomDown:
-			// Clean up.
+		{{
+			// Clean up and prep:
 			NSLog(@"moving to state kFlipAnimationNormal");
 			animationState = kFlipAnimationNormal;
-			// todo: remove all snapshots, add the view at nextViewIndex to the
-			// view hierarchy, add a tap gesture rec on it,
-			// and set nextViewIndex to NSNotFound.
+
+			UIView *newView = [clockTiles objectAtIndex:nextViewIndex];
+			[self addSubviewWithTapRecognizer:newView];
+
+			// Remove snapshots:
+			[topHalfFrontView removeFromSuperview];
+			[bottomHalfFrontView removeFromSuperview];
+			[topHalfBackView removeFromSuperview];
+			[bottomHalfBackView removeFromSuperview];
+			topHalfFrontView = bottomHalfFrontView = topHalfBackView = bottomHalfBackView = nil;
+
+			// And reset other state:
+			nextViewIndex = viewIndex = NSNotFound;
+		}}
 			break;
 	}
 }
