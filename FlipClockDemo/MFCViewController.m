@@ -21,6 +21,7 @@ typedef enum {
 	UIView *bottomHalfFrontView;
 	UIView *topHalfBackView;
 	UIView *bottomHalfBackView;
+	NSUInteger nextViewIndex;
 	NSArray *clockTiles;
 }
 
@@ -121,8 +122,14 @@ typedef enum {
 	NSLog(@"%s %@", __func__, tapGestureRecognizer);
 	animationState = kFlipAnimationNormal;
 	[self changeAnimationState];
-	NSUInteger subviewOffset = [clockTiles indexOfObject:tapGestureRecognizer.view];
-	UIView *nextView = [clockTiles objectAtIndex:subviewOffset + 1];
+	nextViewIndex = [clockTiles indexOfObject:tapGestureRecognizer.view];
+	NSUInteger tileCount = [clockTiles count];
+	if (nextViewIndex == (tileCount - 1)) {
+		nextViewIndex = 0;
+	} else {
+		nextViewIndex++;
+	}
+	UIView *nextView = [clockTiles objectAtIndex:nextViewIndex];
 	[self animateViewDown:tapGestureRecognizer.view withNextView:nextView];
 }
 
@@ -176,22 +183,27 @@ typedef enum {
 	topHalfFrontView = [frontViews objectAtIndex:0];
 	bottomHalfFrontView = [frontViews objectAtIndex:1];
 
-	topHalfFrontView.frame = CGRectOffset(topHalfFrontView.frame, 20.f, 0.f);
+	// Move this view to be where the original view is:
+	topHalfFrontView.frame = CGRectOffset(topHalfFrontView.frame, aView.frame.origin.x, aView.frame.origin.y);
 	[self.view addSubview:topHalfFrontView];
 
+	// Move the bottom half into place:
 	bottomHalfFrontView.frame = topHalfFrontView.frame;
 	bottomHalfFrontView.frame = CGRectOffset(bottomHalfFrontView.frame, 0.f, topHalfFrontView.frame.size.height);
 	[self.view addSubview:bottomHalfFrontView];
+	// And get rid of the original view:
+	[aView removeFromSuperview];
 
 	// Get snapshots for the second view:
 	NSArray *backViews = [self snapshotsForView:nextView];
 	topHalfBackView = [backViews objectAtIndex:0];
 	bottomHalfBackView = [backViews objectAtIndex:1];
 	topHalfBackView.frame = topHalfFrontView.frame;
+	// And place them in the view hierarchy:
 	[self.view insertSubview:topHalfBackView belowSubview:topHalfFrontView];
-
 	bottomHalfBackView.frame = bottomHalfFrontView.frame;
 	[self.view insertSubview:bottomHalfBackView belowSubview:bottomHalfFrontView];
+
 
 	////////////////
 	// Animations //
@@ -269,6 +281,7 @@ typedef enum {
 			// Snapshot the view, animate it down.
 			NSLog(@"moving to state kFlipAnimationTopDown");
 			animationState = kFlipAnimationTopDown;
+			// anything to do here? lots, really.
 			break;
 		case kFlipAnimationTopDown:
 			// Swap animations.
@@ -276,11 +289,15 @@ typedef enum {
 			animationState = kFlipAnimationBottomDown;
 			[bottomHalfFrontView removeFromSuperview];
 			[bottomHalfBackView.superview addSubview:bottomHalfFrontView];
+			// anything else?
 			break;
 		case kFlipAnimationBottomDown:
 			// Clean up.
 			NSLog(@"moving to state kFlipAnimationNormal");
 			animationState = kFlipAnimationNormal;
+			// todo: remove all snapshots, add the view at nextViewIndex to the
+			// view hierarchy, add a tap gesture rec on it,
+			// and set nextViewIndex to NSNotFound.
 			break;
 	}
 }
