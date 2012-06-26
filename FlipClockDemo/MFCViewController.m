@@ -247,7 +247,7 @@ typedef enum {
 	topAnim.delegate = self;
 	topAnim.removedOnCompletion = NO;
 	topAnim.fillMode = kCAFillModeForwards;
-	topAnim.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
+	topAnim.timingFunction = [CAMediaTimingFunction functionWithControlPoints:0.70 :0.00 :1.00 :1.00];
 	[topHalfFrontView.layer addAnimation:topAnim forKey:@"topDownFlip"];
 
 	// Bottom tile:
@@ -266,7 +266,7 @@ typedef enum {
 	bottomAnim.delegate = self;
 	bottomAnim.removedOnCompletion = NO;
 	bottomAnim.fillMode = kCAFillModeBoth;
-	bottomAnim.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+	bottomAnim.timingFunction = [CAMediaTimingFunction functionWithControlPoints:0.30 :1.00 :1.00 :1.00];
 	[bottomHalfBackView.layer addAnimation:bottomAnim forKey:@"bottomDownFlip"];
 }
 
