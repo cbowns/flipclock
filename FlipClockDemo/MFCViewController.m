@@ -279,13 +279,13 @@ typedef enum {
 	// Add an animation to swing from top to bottom.
 	CABasicAnimation *bottomAnim = [CABasicAnimation animationWithKeyPath:@"transform"];
 	bottomAnim.beginTime = topAnim.beginTime + topAnim.duration;
-	bottomAnim.duration = topAnim.duration / 3;
+	bottomAnim.duration = topAnim.duration / 4;
 	bottomAnim.fromValue = [NSValue valueWithCATransform3D:CATransform3DRotate(skewedIdentityTransform, M_PI_2, 1.f, 0.f, 0.f)];
 	bottomAnim.toValue = [NSValue valueWithCATransform3D:skewedIdentityTransform];
 	bottomAnim.delegate = self;
 	bottomAnim.removedOnCompletion = NO;
 	bottomAnim.fillMode = kCAFillModeBoth;
-	bottomAnim.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
+	bottomAnim.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
 	[bottomHalfBackView.layer addAnimation:bottomAnim forKey:@"bottomDownFlip"];
 }
 
