@@ -214,8 +214,8 @@ typedef enum {
 {
 	// Get snapshots for the first view:
 	NSArray *frontViews = [self snapshotsForView:aView];
-	topHalfFrontView = [frontViews objectAtIndex:0];
-	bottomHalfFrontView = [frontViews objectAtIndex:1];
+	topHalfFrontView = [frontViews firstObject];
+	bottomHalfFrontView = [frontViews lastObject];
 
 	// Move this view to be where the original view is:
 	topHalfFrontView.frame = CGRectOffset(topHalfFrontView.frame, aView.frame.origin.x, aView.frame.origin.y);
@@ -230,8 +230,8 @@ typedef enum {
 
 	// Get snapshots for the second view:
 	NSArray *backViews = [self snapshotsForView:nextView];
-	topHalfBackView = [backViews objectAtIndex:0];
-	bottomHalfBackView = [backViews objectAtIndex:1];
+	topHalfBackView = [backViews firstObject];
+	bottomHalfBackView = [backViews lastObject];
 	topHalfBackView.frame = topHalfFrontView.frame;
 	// And place them in the view hierarchy:
 	[self.view insertSubview:topHalfBackView belowSubview:topHalfFrontView];
