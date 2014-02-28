@@ -150,8 +150,6 @@ typedef enum {
 
 - (NSArray *)snapshotsForView:(UIView *)aView;
 {
-	NSArray *returnArray = nil;
-
 	// Render the tapped view into an image:
 	UIGraphicsBeginImageContextWithOptions(aView.bounds.size, aView.layer.opaque, 0.f);
     [aView.layer renderInContext:UIGraphicsGetCurrentContext()];
@@ -193,8 +191,7 @@ typedef enum {
 		bottomHalfView.layer.allowsEdgeAntialiasing = YES;
 	}
 
-	returnArray = [NSArray arrayWithObjects:topHalfView, bottomHalfView, nil];
-	return returnArray;
+	return @[topHalfView, bottomHalfView];
 }
 
 - (void)animateViewDown:(UIView *)aView withNextView:(UIView *)nextView withDuration:(CGFloat)aDuration;
