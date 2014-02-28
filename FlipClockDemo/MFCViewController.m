@@ -72,7 +72,7 @@ typedef enum {
 	UILabel *digitLabel = [[UILabel alloc] initWithFrame:CGRectZero];
 	digitLabel.font = [UIFont systemFontOfSize:160.f];
 	digitLabel.text = text;
-	digitLabel.textAlignment = UITextAlignmentCenter;
+	digitLabel.textAlignment = NSTextAlignmentCenter;
 	digitLabel.textColor = [UIColor whiteColor];
 	digitLabel.backgroundColor = [UIColor clearColor];
 	[digitLabel sizeToFit];
