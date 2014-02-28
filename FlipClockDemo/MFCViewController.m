@@ -187,6 +187,12 @@ typedef enum {
 	UIImageView *topHalfView = [[UIImageView alloc] initWithImage:top];
 	UIImageView *bottomHalfView = [[UIImageView alloc] initWithImage:bottom];
 
+	// Set view layers to be anti-aliased on 7.0 and later.
+	if ([CALayer instancesRespondToSelector:@selector(setAllowsEdgeAntialiasing:)]) {
+		topHalfView.layer.allowsEdgeAntialiasing = YES;
+		bottomHalfView.layer.allowsEdgeAntialiasing = YES;
+	}
+
 	returnArray = [NSArray arrayWithObjects:topHalfView, bottomHalfView, nil];
 	return returnArray;
 }
