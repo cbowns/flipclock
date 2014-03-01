@@ -116,12 +116,19 @@ typedef enum {
 	[super viewDidLoad];
 	// Do any additional setup after loading the view, typically from a nib.
 
-	UIView *aNumberView = [clockTiles objectAtIndex:8];
-	[self addSubviewWithTapRecognizer:aNumberView];
-
 	// Update our slider labels:
 	[self speedSliderValueDidChange:speedSlider];
 	[self zIndexValueDidChange:zSlider];
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+	[super viewWillAppear:animated];
+
+	// Add our first number.
+	// Do this here, because the view's size is still resolving at load time.
+	UIView *aNumberView = [clockTiles objectAtIndex:8];
+	[self addSubviewWithTapRecognizer:aNumberView];
 }
 
 - (void)viewDidUnload
